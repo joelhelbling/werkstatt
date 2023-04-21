@@ -1,0 +1,9 @@
+---
+- joelhelbling/werkzeug-alacritty
+- joelhelbling/werkzeug-neovim
+- joelhelbling/werkzeug-fish
+- git@gitea.my-server.com:me/werkzeug-bash.git
+- https://gitlab.com/my/werkzeug-repo
+- ../dev/tools/werkzeug-starship
+- ./something/else/werkzeug-something
+- /home/me/somewhere/werkzeug-otherthing

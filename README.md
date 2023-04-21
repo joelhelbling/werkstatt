@@ -13,7 +13,7 @@ Here is a possible `bauen.yaml` for setting up a Neovim configuration:
 
 ```yaml
 ---
-targets:
+tasks:
   - location: ~/.config/nvim
     source: ./source/config_nvim/
     operation: link # possible operations: link, copy, append, script

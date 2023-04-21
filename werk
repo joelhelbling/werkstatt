@@ -1,0 +1,17 @@
+#!/usr/bin/env sh
+
+# let's work from here
+werkstatt_dir="$(realpath $(dirname $0))"
+if [ "$(pwd)" != "$werkstatt_dir" ]; then
+  pushd $werkstatt_dir > /dev/null
+fi
+
+# manifest=./example.manifest.yaml
+manifest=./manifest.yaml
+
+source ./utilities/base.sh
+
+for source in $(yq .[] $manifest); do
+  werkzeug=$(ensure_available $source)
+  run_config $werkzeug
+done
