@@ -4,41 +4,47 @@ ESCAPE=$'\e'
 red_text="${ESCAPE}[1;31;47m"
 normal_text="${ESCAPE}[0m"
 
-push() {
-  target=$1
-  pushd $target > /dev/null
-}
-
-pop() {
-  popd > /dev/null
-}
-
-echo_error() {
-  msg=$1
-  echo "$red_text!!! $msg !!!$normal_text"
-}
-
 run_config() {
   werkzeug=$1
   status=$(git_status $werkzeug)
   echo "WERKEN: $werkzeug [$status]"
 
   verify_bauen $werkzeug
+
   # backup existing resources (if not already linked or copied)
-  num_tasks=$(yq e '.tasks[].location' ./bauen.yaml | wc -l | sed 's/^ *//')
+  num_tasks=$(yq e '.tasks[].operation' ./bauen.yaml | wc -l | sed 's/^ *//')
   echo "found a number of tasks ($num_tasks)"
   for ((i=0; i< $num_tasks; ++i)); do
-    location=$(yq e ".tasks[$i].location" ./bauen.yaml)
+    target_location=$(yq e ".tasks[$i].target_location" ./bauen.yaml)
+    realpath $(echo $target_location)
+    ls $target_location
+    exit 0
     source=$(yq e ".tasks[$i].source" ./bauen.yaml)
     operation=$(yq e ".tasks[$i].operation" ./bauen.yaml)
     preserve_original=$(yq e ".tasks[$i].preserve_original" ./bauen.yaml)
-    echo "i is $i"
-    echo "location is $location"
-    echo "source is $source"
-    echo "operation is $operation"
-    echo "preserve_original is $preserve_original"
+    echo "-- i is $i"
+    echo "-- target_location is $target_location"
+    echo "-- source is $source"
+    echo "-- operation is $operation"
+    echo "-- preserve_original is $preserve_original"
+    if [ "$preserve_original" == "true" ]; then
+      backup_target $target_location
+    fi
   done
+
   # create a symbolic link
+}
+
+backup_target() {
+  target=$1
+  unique="$(date -Iseconds | sed 's/[-:,]//g')_$(random_hash)"
+  backup_location="$target.bak.$unique"
+  ls $target
+  echo "backup_target: $target -> $backup_location"
+  if [ -d "$target" ]; then # || [ -f "$target" ]; then
+    echo "---- moving $target -> $backup_location"
+    # mv $target $backup_location
+  fi
 }
 
 verify_bauen() {
@@ -94,7 +100,7 @@ ensure_git() {
 git_status() {
   werkzeug=$1
   push $werkzeug
-  git_status=$($bin_git status --porcelain)
+  git_status="$($bin_git status --porcelain)"
   if [ -z "$git_status" ]; then
     status="clean"
   else
@@ -104,10 +110,22 @@ git_status() {
   echo "$status"
 }
 
-for util in yq git wc; do
-  if [ -z "$(which $util)" ]; then
-    echo_error "You need to install $util"
-    exit 1
-  fi
-  declare "bin_$util=$(which $util)"
-done
+push() {
+  target=$1
+  pushd $target > /dev/null
+}
+
+pop() {
+  popd > /dev/null
+}
+
+echo_error() {
+  msg=$1
+  echo "$red_text!!! $msg !!!$normal_text"
+}
+
+random_hash() {
+  length=$1
+  length=$(if [ "$length" == "" ]; then echo 6; fi)
+  echo "$(head /dev/urandom | md5sum | head -c $length)"
+}

@@ -1,4 +1,46 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
+
+ESCAPE=$'\e'
+red_text="${ESCAPE}[1;31;47m"
+normal_text="${ESCAPE}[0m"
+
+echo_error() {
+  msg=$1
+  echo "$red_text!!! $msg !!!$normal_text"
+}
+
+# make sure we have zx
+if [ -z `which zx` ]; then
+  if [ -z `which node` ]; then
+    echo "Stopping because it looks like we don't have NodeJS installed."
+    case `uname` in
+    "Darwin")
+      echo_error "If you're using Homebrew, you could \`brew install node\`"
+    ;;
+    "Linux")
+      echo_error <<EOF
+You could do:
+  $ sudo apt update
+  $ sudo apt install nodejs
+EOF
+    ;;
+    *)
+      echo_error "Please install NodeJS and run this again."
+    esac
+    exit 1
+  else
+    npm i -g zx
+  fi
+fi
+
+# check for dependencies
+for util in git wc; do
+  if [ -z "$(which $util)" ]; then
+    echo_error "You need to install $util"
+    exit 1
+  fi
+  declare "bin_$util=$(which $util)"
+done
 
 # let's work from here
 werkstatt_dir="$(realpath $(dirname $0))"
@@ -6,12 +48,5 @@ if [ "$(pwd)" != "$werkstatt_dir" ]; then
   pushd $werkstatt_dir > /dev/null
 fi
 
-# manifest=./example.manifest.yaml
-manifest=./manifest.yaml
-
-source ./utilities/base.sh
-
-for source in $(yq .[] $manifest); do
-  werkzeug=$(ensure_available $source)
-  run_config $werkzeug
-done
+zx_bin=$(which zx)
+$zx_bin ./werk.mjs
