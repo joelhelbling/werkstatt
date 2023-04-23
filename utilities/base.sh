@@ -1,8 +1,8 @@
 # no shebang, this is meant to be sourced!
 
-ESCAPE=$'\e'
-red_text="${ESCAPE}[1;31;47m"
-normal_text="${ESCAPE}[0m"
+# ESCAPE=$'\e'
+# red_text="${ESCAPE}[1;31;47m"
+# normal_text="${ESCAPE}[0m"
 
 run_config() {
   werkzeug=$1
@@ -47,19 +47,19 @@ backup_target() {
   fi
 }
 
-verify_bauen() {
-  werkzeug=$1
-  push $werkzeug
-  if [ -f ./bauen.yaml ]; then
-    if [ "$(yq .tasks ./bauen.yaml)" == "null" ]; then
-      echo_error "$werkzeug/bauen.yaml has no tasks"
-      exit 1
-    fi
-  else
-    echo_error "$werkzeug/bauen.yaml not found"
-    exit 1
-  fi
-}
+# verify_bauen() {
+#   werkzeug=$1
+#   push $werkzeug
+#   if [ -f ./bauen.yaml ]; then
+#     if [ "$(yq .tasks ./bauen.yaml)" == "null" ]; then
+#       echo_error "$werkzeug/bauen.yaml has no tasks"
+#       exit 1
+#     fi
+#   else
+#     echo_error "$werkzeug/bauen.yaml not found"
+#     exit 1
+#   fi
+# }
 
 # ensure_available() {
 #   source=$1
@@ -97,32 +97,32 @@ verify_bauen() {
 #   echo "./werkzeuge/$werkzeug"
 # }
 
-git_status() {
-  werkzeug=$1
-  push $werkzeug
-  git_status="$($bin_git status --porcelain)"
-  if [ -z "$git_status" ]; then
-    status="clean"
-  else
-    status="changes: $git_status"
-  fi
-  pop
-  echo "$status"
-}
+# git_status() {
+#   werkzeug=$1
+#   push $werkzeug
+#   git_status="$($bin_git status --porcelain)"
+#   if [ -z "$git_status" ]; then
+#     status="clean"
+#   else
+#     status="changes: $git_status"
+#   fi
+#   pop
+#   echo "$status"
+# }
 
-push() {
-  target=$1
-  pushd $target > /dev/null
-}
+# push() {
+#   target=$1
+#   pushd $target > /dev/null
+# }
 
-pop() {
-  popd > /dev/null
-}
+# pop() {
+#   popd > /dev/null
+# }
 
-echo_error() {
-  msg=$1
-  echo "$red_text!!! $msg !!!$normal_text"
-}
+# echo_error() {
+#   msg=$1
+#   echo "$red_text!!! $msg !!!$normal_text"
+# }
 
 random_hash() {
   length=$1
