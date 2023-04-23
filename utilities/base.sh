@@ -61,41 +61,41 @@ verify_bauen() {
   fi
 }
 
-ensure_available() {
-  source=$1
-  werkzeug=$source
-  if [[ "$source" == "git@"* ]] || [[ "$source" == "https://"* ]]; then
-    werkzeug=$(ensure_git $source)
-  elif [[ "$source" == "../"* ]] || [[ "$source" == "./"* ]] || [[ "$source" == "/"* ]]; then
-    werkzeug=$(ensure_local $source)
-  elif [[ "$source" == *"/"* ]]; then
-    werkzeug=$(ensure_git "git@github.com:$source")
-  else
-    echo_error "I don't understand this source: $source"
-    exit 1
-  fi
-  echo $werkzeug
-}
+# ensure_available() {
+#   source=$1
+#   werkzeug=$source
+#   if [[ "$source" == "git@"* ]] || [[ "$source" == "https://"* ]]; then
+#     werkzeug=$(ensure_git $source)
+#   elif [[ "$source" == "../"* ]] || [[ "$source" == "./"* ]] || [[ "$source" == "/"* ]]; then
+#     werkzeug=$(ensure_local $source)
+#   elif [[ "$source" == *"/"* ]]; then
+#     werkzeug=$(ensure_git "git@github.com:$source")
+#   else
+#     echo_error "I don't understand this source: $source"
+#     exit 1
+#   fi
+#   echo $werkzeug
+# }
 
-ensure_local() {
-  werkzeug=$1
-  if [ ! -d $werkzeug ]; then
-    echo_error "$werkzeug not found"
-    exit 1
-  fi
-  echo $werkzeug
-}
+# ensure_local() {
+#   werkzeug=$1
+#   if [ ! -d $werkzeug ]; then
+#     echo_error "$werkzeug not found"
+#     exit 1
+#   fi
+#   echo $werkzeug
+# }
 
-ensure_git() {
-  remote=$1
-  werkzeug="$(echo $remote | sed 's/.git$//' | rev | cut -d "/" -f 1 | rev)"
-  if [ ! -d "./werkzeuge/$werkzeug" ]; then
-    push ./werkzeuge
-    $bin_git clone $remote
-    pop
-  fi
-  echo "./werkzeuge/$werkzeug $status"
-}
+# ensure_git() {
+#   remote=$1
+#   werkzeug="$(echo $remote | sed 's/.git$//' | rev | cut -d "/" -f 1 | rev)"
+#   if [ ! -d "./werkzeuge/$werkzeug" ]; then
+#     push ./werkzeuge
+#     $bin_git clone $remote
+#     pop
+#   fi
+#   echo "./werkzeuge/$werkzeug"
+# }
 
 git_status() {
   werkzeug=$1

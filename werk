@@ -33,15 +33,6 @@ EOF
   fi
 fi
 
-# check for dependencies
-for util in git wc; do
-  if [ -z "$(which $util)" ]; then
-    echo_error "You need to install $util"
-    exit 1
-  fi
-  declare "bin_$util=$(which $util)"
-done
-
 # let's work from here
 werkstatt_dir="$(realpath $(dirname $0))"
 if [ "$(pwd)" != "$werkstatt_dir" ]; then
