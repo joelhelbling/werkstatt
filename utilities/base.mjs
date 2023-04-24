@@ -8,10 +8,19 @@ function raise(msg) {
 async function ensureGit(remote) {
   let werkzeug = `./werkzeuge/${remote.replace(/\.git$/, '').split('/').at(-1)}`
   if (! fs.existsSync(werkzeug)) {
+    $.verbose = false
     cd('./werkzeuge')
+    $.verbose = true
     $`git clone ${remote}`
+    $.verbose = false
     cd('..')
+    $.verbose = true
   }
+  $.verbose = false
+  cd(werkzeug)
+  $`git fetch origin`
+  cd('../../')
+  $.verbose = true
   return werkzeug
 }
 
@@ -72,18 +81,64 @@ async function uniqueToken() {
   return `${dateStr}_${hash}`
 }
 
-async function backupTarget(target) {
-  let backupLocation = `${target}.bak.${await uniqueToken()}` 
-  $`mv ${target.replace(/^~/, '$HOME')} ${backupLocation.replace(/^~/, '$HOME')}`
-  console.log(chalk.green("  ◆ ...backed up original"))
+function isAlreadyLinked(werkzeug, task) {
+  let target = detildify(task.target)
+  let source = path.resolve(werkzeug, detildify(task.source))
+  if (! fs.existsSync(target)) {
+    return false
+  }
+  let isLink = fs.lstatSync(target).isSymbolicLink()
+  if (isLink && fs.readlinkSync(target) == source) {
+    return true
+  } else {
+    console.log(chalk.red(`----- isLink: ${isLink}, ${fs.readlinkSync(target)} != ${source}`))
+    return false
+  }
+}
+
+async function backupTarget(task) {
+  if (task.preserve_original) {
+    let target = detildify(task.target)
+    if (fs.existsSync(target)) {
+      let token = await uniqueToken()
+      let backupLocation = `${target}.bak.${token}`
+      $.verbose = false
+      await $`mv ${target} ${backupLocation}`
+      $.verbose = true
+      console.log(chalk.green("  ◆ ...backed up original"))
+    }
+  }
+}
+
+export function detildify(p) {
+  return p.replace(new RegExp("^~/"), os.homedir() + '/')
+}
+
+async function makeSymbolicLink(werkzeug, task) {
+  let source = path.resolve(werkzeug, detildify(task.source))
+  let target = path.resolve(detildify(task.target))
+  $`ln -s ${source} ${target}`
+  console.log(chalk.green("  ◆ ...linked"))
 }
 
 export async function runConfig(werkzeug) {
   await reportGitStatus(werkzeug)
   let bauen = await ensureBauenYaml(werkzeug)
-  bauen.tasks.forEach(async task => {
-    if (task.preserve_original) {
-      await backupTarget(task.target)
+  await bauen.tasks.forEach(async task => {
+    switch (task.operation) {
+      case 'link':
+        if (isAlreadyLinked(werkzeug, task)) {
+          console.log(chalk.green("  ◆ ...was already linked"))
+        } else {
+          await backupTarget(task)
+          await makeSymbolicLink(werkzeug, task)
+        }
+        break
+      case 'script':
+        console.log(chalk.yellow("  ◆ ...script not implemented yet"))
+        break
+      default:
+        raise(`Don't know how to do operation: ${task.operation}`)
     }
   })
 

@@ -1,6 +1,5 @@
 #!/usr/bin/env zx
 
-import 'zx/globals'
 import { ensureAvailable, runConfig } from './utilities/base.mjs'
 
 // ensure dependencies
