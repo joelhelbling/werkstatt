@@ -7,20 +7,15 @@ function raise(msg) {
 
 async function ensureGit(remote) {
   let werkzeug = `./werkzeuge/${remote.replace(/\.git$/, '').split('/').at(-1)}`
+
   if (! fs.existsSync(werkzeug)) {
-    $.verbose = false
-    cd('./werkzeuge')
-    $.verbose = true
-    $`git clone ${remote}`
-    $.verbose = false
-    cd('..')
-    $.verbose = true
+    await cd('./werkzeuge')
+    await $`git clone ${remote}`
+    await cd('..')
   }
-  $.verbose = false
-  cd(werkzeug)
-  $`git fetch origin`
-  cd('../../')
-  $.verbose = true
+  await cd(werkzeug)
+  await $`git fetch origin`
+  await cd('../../')
   return werkzeug
 }
 
@@ -49,11 +44,9 @@ export async function ensureAvailable(source) {
 
 async function reportGitStatus(werkzeug) {
   let startingCwd = process.cwd()
-  $.verbose = false
   cd(werkzeug)
   let gitStatus = await $`git status --porcelain`
   cd(startingCwd)
-  $.verbose = true
   let gStat = gitStatus.length > 0 ? `changed [${gitStatus}]` : "clean"
   console.log(chalk.green(`  ◆ ...git status: ${gStat}`))
 }
@@ -74,9 +67,7 @@ async function ensureBauenYaml(werkzeug) {
 }
 
 async function uniqueToken() {
-  $.verbose = false
   let hash = await $`head /dev/urandom | md5sum | head -c 6`
-  $.verbose = true
   let dateStr = new Date().toISOString().replace(/[-\.\:]/g, '')
   return `${dateStr}_${hash}`
 }
@@ -102,9 +93,7 @@ async function backupTarget(task) {
     if (fs.existsSync(target)) {
       let token = await uniqueToken()
       let backupLocation = `${target}.bak.${token}`
-      $.verbose = false
       await $`mv ${target} ${backupLocation}`
-      $.verbose = true
       console.log(chalk.green("  ◆ ...backed up original"))
     }
   }
@@ -117,7 +106,7 @@ export function detildify(p) {
 async function makeSymbolicLink(werkzeug, task) {
   let source = path.resolve(werkzeug, detildify(task.source))
   let target = path.resolve(detildify(task.target))
-  $`ln -s ${source} ${target}`
+  await $`ln -s ${source} ${target}`
   console.log(chalk.green("  ◆ ...linked"))
 }
 
