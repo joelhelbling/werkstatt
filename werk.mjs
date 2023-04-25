@@ -1,5 +1,6 @@
 #!/usr/bin/env zx
 
+import { chalk, fs, which, YAML } from 'zx'
 import { ensureAvailable, runConfig } from './utilities/base.mjs'
 
 // verbose output

@@ -1,4 +1,4 @@
-// import { fs, cd, chalk } from 'zx/globals'
+import { fs, cd, chalk } from 'zx'
 
 function raise(msg) {
   console.error(chalk.redBright(msg))

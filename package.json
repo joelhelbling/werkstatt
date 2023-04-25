@@ -1,0 +1,28 @@
+{
+  "name": "werkstatt",
+  "version": "0.1.0",
+  "description": "Install and configure development tools",
+  "main": "werk.mjs",
+  "scripts": {
+    "zx": "zx ./werk.mjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joelhelbling/werkstatt.git"
+  },
+  "keywords": [
+    "dev",
+    "tools",
+    "config"
+  ],
+  "author": "Joel Helbling",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/joelhelbling/werkstatt/issues"
+  },
+  "homepage": "https://github.com/joelhelbling/werkstatt#readme",
+  "dependencies": {
+    "zx": "^7.2.1"
+  }
+}

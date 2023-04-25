@@ -39,5 +39,7 @@ if [ "$(pwd)" != "$werkstatt_dir" ]; then
   pushd $werkstatt_dir > /dev/null
 fi
 
-zx_bin=$(which zx)
-$zx_bin ./werk.mjs
+if [ ! -f ./package-lock.json ]; then
+  npm install
+fi
+npm run --silent zx
