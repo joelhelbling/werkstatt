@@ -1,4 +1,4 @@
-import { fs, cd, chalk } from 'zx'
+import { fs, path, chalk } from 'zx'
 
 function raise(msg) {
   console.error(chalk.redBright(msg))
@@ -7,15 +7,12 @@ function raise(msg) {
 
 async function ensureGit(remote) {
   let werkzeug = `./werkzeuge/${remote.replace(/\.git$/, '').split('/').at(-1)}`
+  console.log(chalk.blueBright(`  • ...[${werkzeug}] remote: ${remote}`))
 
   if (! fs.existsSync(werkzeug)) {
-    await cd('./werkzeuge')
-    await $`git clone ${remote}`
-    await cd('..')
+    await $`cd ./werkzeuge && git clone ${remote}`
   }
-  await cd(werkzeug)
-  await $`git fetch origin`
-  await cd('../../')
+  await $`cd ${werkzeug} && git fetch origin`
   return werkzeug
 }
 
@@ -25,30 +22,27 @@ async function ensureLocal(werkzeug) {
   } else if (! fs.statSync(werkzeug).isDirectory()) {
     raise(`  ⧱ ...werkzeug path is not a directory: ${werkzeug}`)
   }
-  console.log(chalk.green(`  ◆ ...available`))
+  console.log(chalk.green(`  ◆ ...[${werkzeug}] available`))
   return werkzeug
 }
 
 export async function ensureAvailable(source) {
   let werkzeug;
-  if (source.match(/^git@/) || source.match("^https?:\/\/")) {
-    return ensureGit(source)
+  if (source.match(/^git@/) || source.match("^(https?|ssh):\/\/")) {
+    return await ensureGit(source)
   } else if (source.match(/^[\.\/]/)) {
-    return ensureLocal(source)
+    return await ensureLocal(source)
   } else if (source.match(/^[^\/]+\/[^\/]+$/)) {
-    return ensureGit(`git@github.com:${source}`)
+    return await ensureGit(`git@github.com:${source}`)
   } else {
     raise(`I don't understand this source: ${source}`)
   }
 }
 
 async function reportGitStatus(werkzeug) {
-  let startingCwd = process.cwd()
-  cd(werkzeug)
-  let gitStatus = await $`git status --porcelain`
-  cd(startingCwd)
+  let gitStatus = await $`cd ${werkzeug} && git status --porcelain`
   let gStat = gitStatus.length > 0 ? `changed [${gitStatus}]` : "clean"
-  console.log(chalk.green(`  ◆ ...git status: ${gStat}`))
+  console.log(chalk.green(`  ◆ ...[${werkzeug}] git status: ${gStat}`))
 }
 
 async function ensureBauenYaml(werkzeug) {
@@ -62,7 +56,7 @@ async function ensureBauenYaml(werkzeug) {
   if (bauen.tasks == null) {
     raise(`${bauenYaml} has no tasks`)
   }
-  console.log(chalk.green("  ◆ ...bauen.yaml present"))
+  console.log(chalk.green(`  ◆ ...[${werkzeug}] bauen.yaml present`))
   return bauen
 }
 
@@ -82,7 +76,6 @@ function isAlreadyLinked(werkzeug, task) {
   if (isLink && fs.readlinkSync(target) == source) {
     return true
   } else {
-    console.log(chalk.red(`----- isLink: ${isLink}, ${fs.readlinkSync(target)} != ${source}`))
     return false
   }
 }
@@ -94,7 +87,7 @@ async function backupTarget(task) {
       let token = await uniqueToken()
       let backupLocation = `${target}.bak.${token}`
       await $`mv ${target} ${backupLocation}`
-      console.log(chalk.green("  ◆ ...backed up original"))
+      console.log(chalk.green(`  ◆ ...[${werkzeug}] backed up original`))
     }
   }
 }
@@ -107,29 +100,30 @@ async function makeSymbolicLink(werkzeug, task) {
   let source = path.resolve(werkzeug, detildify(task.source))
   let target = path.resolve(detildify(task.target))
   await $`ln -s ${source} ${target}`
-  console.log(chalk.green("  ◆ ...linked"))
+  console.log(chalk.green(`  ◆ ...[${werkzeug}] linked`))
 }
 
-export async function runConfig(werkzeug) {
+export async function runConfig(source) {
+  let werkzeug = await ensureAvailable(source)
   await reportGitStatus(werkzeug)
   let bauen = await ensureBauenYaml(werkzeug)
   await bauen.tasks.forEach(async task => {
     switch (task.operation) {
       case 'link':
         if (isAlreadyLinked(werkzeug, task)) {
-          console.log(chalk.green("  ◆ ...was already linked"))
+          console.log(chalk.green(`  ◆ ...[${werkzeug}] was already linked`))
         } else {
           await backupTarget(task)
           await makeSymbolicLink(werkzeug, task)
         }
         break
       case 'script':
-        console.log(chalk.yellow("  ◆ ...script not implemented yet"))
+        console.log(chalk.yellow(`  ◆ ...[${werkzeug}] script not implemented yet`))
         break
       default:
         raise(`Don't know how to do operation: ${task.operation}`)
     }
   })
 
-  console.log(chalk.green(`  ◆ ...configured`))
+  console.log(chalk.green(`  ◆ ...[${werkzeug}] configured`))
 }
