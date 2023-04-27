@@ -1,13 +1,20 @@
 import { fs, path, chalk } from 'zx'
 
+const log = {
+  info:     (msg, topic = "") => console.log(chalk.blueBright(`   [${topic}] ${msg}`)),
+  progress: (msg, topic = "") => console.log(chalk.green(`   [${topic}] ${msg}`)),
+  warning:  (msg, topic = "") => console.log(chalk.yellow(`   [${topic}] ${msg}`)),
+  error:    (msg, topic = "") => console.log(chalk.redBright(`   [${topic}] !!! ${msg} !!!`))
+}
+
 function raise(msg) {
-  console.error(chalk.redBright(msg))
+  log.error(msg)
   process.exit(1)
 }
 
 async function ensureGit(remote) {
   let werkzeug = `./werkzeuge/${remote.replace(/\.git$/, '').split('/').at(-1)}`
-  console.log(chalk.blueBright(`  • ...[${werkzeug}] remote: ${remote}`))
+  log.info(`remote: ${remote}`, werkzeug)
 
   if (! fs.existsSync(werkzeug)) {
     await $`cd ./werkzeuge && git clone ${remote}`
@@ -18,11 +25,11 @@ async function ensureGit(remote) {
 
 async function ensureLocal(werkzeug) {
   if (! fs.existsSync(werkzeug)) {
-    raise(`  ⧱ ...werkzeug not found: ${werkzeug}`)
+    raise('werkzeug not found', werkzeug)
   } else if (! fs.statSync(werkzeug).isDirectory()) {
-    raise(`  ⧱ ...werkzeug path is not a directory: ${werkzeug}`)
+    raise('werkzeug path is not a directory', werkzeug)
   }
-  console.log(chalk.green(`  ◆ ...[${werkzeug}] available`))
+  log.progress('available', werkzeug)
   return werkzeug
 }
 
@@ -42,21 +49,21 @@ export async function ensureAvailable(source) {
 async function reportGitStatus(werkzeug) {
   let gitStatus = await $`cd ${werkzeug} && git status --porcelain`
   let gStat = gitStatus.length > 0 ? `changed [${gitStatus}]` : "clean"
-  console.log(chalk.green(`  ◆ ...[${werkzeug}] git status: ${gStat}`))
+  log.progress(`git status: ${gStat}`, werkzeug)
 }
 
 async function ensureBauenYaml(werkzeug) {
   let bauenYaml = `${werkzeug}/bauen.yaml`
   if (! fs.existsSync(bauenYaml)) {
-    raise(`${bauenYaml} not found`)
+    raise(`${bauenYaml} not found`, werkzeug)
   }
   let bauen = YAML.parse(
     await fs.readFile(bauenYaml, 'utf8')
   )
   if (bauen.tasks == null) {
-    raise(`${bauenYaml} has no tasks`)
+    raise(`${bauenYaml} has no tasks`, werkzeug)
   }
-  console.log(chalk.green(`  ◆ ...[${werkzeug}] bauen.yaml present`))
+  log.progress('bauen.yaml present', werkzeug)
   return bauen
 }
 
@@ -88,7 +95,7 @@ async function backupTarget(task) {
       let backupLocation = `${target}.bak.${token}`
       await $`mv ${target} ${backupLocation}`
       // TODO further up stream, calculate werkzeug and stash it in the task
-      console.log(chalk.green(`  ◆ ...[${task.source}] backed up original`))
+      log.progress('backed up original', task.source)
     }
   }
 }
@@ -101,7 +108,7 @@ async function makeSymbolicLink(werkzeug, task) {
   let source = path.resolve(werkzeug, detildify(task.source))
   let target = path.resolve(detildify(task.target))
   await $`ln -s ${source} ${target}`
-  console.log(chalk.green(`  ◆ ...[${werkzeug}] linked`))
+  log.progress('linked', werkzeug)
 }
 
 export async function runConfig(source) {
@@ -114,20 +121,20 @@ export async function runConfig(source) {
       switch (task.operation) {
         case 'link':
           if (isAlreadyLinked(werkzeug, task)) {
-            console.log(chalk.green(`  ◆ ...[${werkzeug}] was already linked`))
+            log.progress('was already linked', werkzeug)
           } else {
             await backupTarget(task)
             await makeSymbolicLink(werkzeug, task)
           }
           break
         case 'script':
-          console.log(chalk.yellow(`  ◆ ...[${werkzeug}] script not implemented yet`))
+          log.warning('script not implemented yet', werkzeug)
           break
         default:
-          raise(`Don't know how to do operation: ${task.operation}`)
+          raise(`Don't know how to do operation: ${task.operation}`, werkzeug)
       }
     }
   })
 
-  console.log(chalk.green(`  ◆ ...[${werkzeug}] configured`))
+  log.progress('configured', werkzeug)
 }
