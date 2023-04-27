@@ -87,7 +87,7 @@ async function backupTarget(task) {
       let token = await uniqueToken()
       let backupLocation = `${target}.bak.${token}`
       await $`mv ${target} ${backupLocation}`
-      # TODO further up stream, calculate werkzeug and stash it in the task
+      // TODO further up stream, calculate werkzeug and stash it in the task
       console.log(chalk.green(`  ◆ ...[${task.source}] backed up original`))
     }
   }
