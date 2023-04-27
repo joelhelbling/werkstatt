@@ -105,24 +105,27 @@ async function makeSymbolicLink(werkzeug, task) {
 }
 
 export async function runConfig(source) {
+  let uname = os.platform()
   let werkzeug = await ensureAvailable(source)
   await reportGitStatus(werkzeug)
   let bauen = await ensureBauenYaml(werkzeug)
   await bauen.tasks.forEach(async task => {
-    switch (task.operation) {
-      case 'link':
-        if (isAlreadyLinked(werkzeug, task)) {
-          console.log(chalk.green(`  ◆ ...[${werkzeug}] was already linked`))
-        } else {
-          await backupTarget(task)
-          await makeSymbolicLink(werkzeug, task)
-        }
-        break
-      case 'script':
-        console.log(chalk.yellow(`  ◆ ...[${werkzeug}] script not implemented yet`))
-        break
-      default:
-        raise(`Don't know how to do operation: ${task.operation}`)
+    if (! task.uname || uname === task.uname) {
+      switch (task.operation) {
+        case 'link':
+          if (isAlreadyLinked(werkzeug, task)) {
+            console.log(chalk.green(`  ◆ ...[${werkzeug}] was already linked`))
+          } else {
+            await backupTarget(task)
+            await makeSymbolicLink(werkzeug, task)
+          }
+          break
+        case 'script':
+          console.log(chalk.yellow(`  ◆ ...[${werkzeug}] script not implemented yet`))
+          break
+        default:
+          raise(`Don't know how to do operation: ${task.operation}`)
+      }
     }
   })
 
