@@ -1,6 +1,6 @@
-import { fs, path, chalk, os } from 'zx'
+import { fs, path, chalk, os, YAML } from 'zx'
 import ld from 'lodash'
-const { merge } = ld
+const { merge, trimEnd } = ld
 
 function cleanWZ(topic) {
   const pattern = new RegExp("^./werkzeuge/")
@@ -8,11 +8,11 @@ function cleanWZ(topic) {
   return topic.replace(/^werkzeug-/, '')
 }
 
-const log = {
+export const log = {
   info:     (msg, topic = "") => console.log(chalk.blueBright(`   [${cleanWZ(topic)}] ${msg}`)),
   progress: (msg, topic = "") => console.log(chalk.green(`   [${cleanWZ(topic)}] ${msg}`)),
   complete: (msg, topic = "") => console.log(chalk.greenBright(`   [${cleanWZ(topic)}] ${msg}`)),
-  warning:  (msg, topic = "") => console.log(chalk.yellow(`   [${cleanWZ(topic)}] ${msg}`)),
+  warning:  (msg, topic = "") => console.log(chalk.yellowBright(`   [${cleanWZ(topic)}] ${msg}`)),
   error:    (msg, topic = "") => console.log(chalk.redBright(`   [${cleanWZ(topic)}] !!! ${msg} !!!`))
 }
 
@@ -55,18 +55,23 @@ export async function ensureAvailable(source) {
   }
 }
 
-async function reportGitStatus(werkzeug) {
-  let gitStatus = await $`cd ${werkzeug} && git status --porcelain`
-  let gStat = gitStatus.length > 0 ? `changed [${gitStatus}]` : "clean"
-  log.progress(`git status: ${gStat}`, werkzeug)
+export async function reportGitStatus(werkzeug) {
+  const gitStatus = trimEnd(
+    (await $`cd ${werkzeug} && git status --porcelain`).stdout
+  ).split(/\n/).join(', ')
+  if (gitStatus.length > 0) {
+    log.warning(`git status: ${gitStatus}`, werkzeug)
+  } else {
+    log.progress('git status: clean', werkzeug)
+  }
 }
 
 async function ensureBauenYaml(werkzeug) {
-  let bauenYaml = `${werkzeug}/bauen.yaml`
+  const bauenYaml = `${werkzeug}/bauen.yaml`
   if (! fs.existsSync(bauenYaml)) {
     raise(`${bauenYaml} not found`, werkzeug)
   }
-  let bauen = YAML.parse(fs.readFileSync(bauenYaml, 'utf8'))
+  const bauen = YAML.parse(fs.readFileSync(bauenYaml, 'utf8'))
   if (bauen.tasks == null) {
     raise(`${bauenYaml} has no tasks`, werkzeug)
   }
@@ -141,10 +146,8 @@ async function scriptOperation(werkzeug, task) {
   log.warning('script not implemented yet', werkzeug)
 }
 
-export async function runConfig(source) {
+export async function runConfig(werkzeug) {
   let uname = os.platform()
-  let werkzeug = await ensureAvailable(source)
-  await reportGitStatus(werkzeug)
   let bauen = await ensureBauenYaml(werkzeug)
   for (const task of bauen.tasks) {
     if (! task.uname || uname === task.uname) {
@@ -153,7 +156,8 @@ export async function runConfig(source) {
           if (isAlreadyLinked(werkzeug, task)) {
             log.progress('was already linked', werkzeug)
           } else {
-            await backupTarget(task).then(_ => linkOperation(werkzeug, task))
+            await backupTarget(task)
+            await linkOperation(werkzeug, task)
           }
           break
         case 'copy':

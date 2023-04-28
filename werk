@@ -42,4 +42,4 @@ fi
 if [ ! -f ./package-lock.json ]; then
   npm install
 fi
-npm run --silent zx
+npm run --silent zx -- $@
