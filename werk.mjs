@@ -18,4 +18,6 @@ deps.forEach(dep => {
 let manifestFile = "./manifest.yaml"
 let manifest = YAML.parse(await fs.readFile(manifestFile, 'utf8'))
 console.log("Bauen ze werkzeuge!")
-await manifest.forEach(runConfig)
+for (const werkzeug of manifest) {
+  await runConfig(werkzeug)
+}

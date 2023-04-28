@@ -1,4 +1,4 @@
-import { fs, path, chalk } from 'zx'
+import { fs, path, chalk, os } from 'zx'
 import ld from 'lodash'
 const { merge } = ld
 
@@ -139,31 +139,30 @@ export async function runConfig(source) {
   let werkzeug = await ensureAvailable(source)
   await reportGitStatus(werkzeug)
   let bauen = await ensureBauenYaml(werkzeug)
-  let lePromise
-  await bauen.tasks.forEach(async task => {
+  for (const task of bauen.tasks) {
     if (! task.uname || uname === task.uname) {
       switch (task.operation) {
         case 'link':
           if (isAlreadyLinked(werkzeug, task)) {
             log.progress('was already linked', werkzeug)
           } else {
-            lePromise = backupTarget(task).then(_ => linkOperation(werkzeug, task))
+            await backupTarget(task).then(_ => linkOperation(werkzeug, task))
           }
           break
         case 'copy':
-          lePromise = copyOperation(werkzeug, task)
+          await copyOperation(werkzeug, task)
           break
         case 'merge_yaml':
-          lePromise = mergeYamlOperation(werkzeug, task)
+          await mergeYamlOperation(werkzeug, task)
           break
         case 'script':
-          lePromise = scriptOperation(werkzeug, task)
+          await scriptOperation(werkzeug, task)
           break
         default:
           raise(`Don't know how to do operation: ${task.operation}`, werkzeug)
       }
     }
-  })
+  }
 
   log.progress('configured', werkzeug)
 }
