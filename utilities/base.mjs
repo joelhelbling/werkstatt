@@ -2,11 +2,18 @@ import { fs, path, chalk, os } from 'zx'
 import ld from 'lodash'
 const { merge } = ld
 
+function cleanWZ(topic) {
+  const pattern = new RegExp("^./werkzeuge/")
+  topic = topic.replace(pattern, '')
+  return topic.replace(/^werkzeug-/, '')
+}
+
 const log = {
-  info:     (msg, topic = "") => console.log(chalk.blueBright(`   [${topic}] ${msg}`)),
-  progress: (msg, topic = "") => console.log(chalk.green(`   [${topic}] ${msg}`)),
-  warning:  (msg, topic = "") => console.log(chalk.yellow(`   [${topic}] ${msg}`)),
-  error:    (msg, topic = "") => console.log(chalk.redBright(`   [${topic}] !!! ${msg} !!!`))
+  info:     (msg, topic = "") => console.log(chalk.blueBright(`   [${cleanWZ(topic)}] ${msg}`)),
+  progress: (msg, topic = "") => console.log(chalk.green(`   [${cleanWZ(topic)}] ${msg}`)),
+  complete: (msg, topic = "") => console.log(chalk.greenBright(`   [${cleanWZ(topic)}] ${msg}`)),
+  warning:  (msg, topic = "") => console.log(chalk.yellow(`   [${cleanWZ(topic)}] ${msg}`)),
+  error:    (msg, topic = "") => console.log(chalk.redBright(`   [${cleanWZ(topic)}] !!! ${msg} !!!`))
 }
 
 function raise(msg) {
@@ -164,5 +171,5 @@ export async function runConfig(source) {
     }
   }
 
-  log.progress('configured', werkzeug)
+  log.complete('configured', werkzeug)
 }
