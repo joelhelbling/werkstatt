@@ -1,4 +1,6 @@
 import { fs, path, chalk } from 'zx'
+import ld from 'lodash'
+const { merge } = ld
 
 const log = {
   info:     (msg, topic = "") => console.log(chalk.blueBright(`   [${topic}] ${msg}`)),
@@ -57,9 +59,7 @@ async function ensureBauenYaml(werkzeug) {
   if (! fs.existsSync(bauenYaml)) {
     raise(`${bauenYaml} not found`, werkzeug)
   }
-  let bauen = YAML.parse(
-    await fs.readFile(bauenYaml, 'utf8')
-  )
+  let bauen = YAML.parse(fs.readFileSync(bauenYaml, 'utf8'))
   if (bauen.tasks == null) {
     raise(`${bauenYaml} has no tasks`, werkzeug)
   }
@@ -104,11 +104,34 @@ export function detildify(p) {
   return p.replace(new RegExp("^~/"), os.homedir() + '/')
 }
 
-async function makeSymbolicLink(werkzeug, task) {
+async function linkOperation(werkzeug, task) {
   let source = path.resolve(werkzeug, detildify(task.source))
   let target = path.resolve(detildify(task.target))
   await $`ln -s ${source} ${target}`
   log.progress('linked', werkzeug)
+}
+
+async function copyOperation(werkzeug, task) {
+  let source = path.resolve(werkzeug, detildify(task.source))
+  let target = path.resolve(werkzeug, detildify(task.target))
+  await $`cp -f ${source} ${target}`
+  log.progress('copied', werkzeug)
+}
+
+async function mergeYamlOperation(werkzeug, task) {
+  let target = path.resolve(werkzeug, detildify(task.target))
+  let targetFound = false
+  let targetYaml = YAML.parse(
+    fs.readFileSync(target, 'utf8'),
+    { keepSourceTokens: true }
+  )
+  let mergedYaml = merge(targetYaml, task.changes)
+  fs.writeFileSync(target, YAML.stringify(mergedYaml, { keepSourceTokens: true }))
+  log.progress('yaml merged', werkzeug)
+}
+
+async function scriptOperation(werkzeug, task) {
+  log.warning('script not implemented yet', werkzeug)
 }
 
 export async function runConfig(source) {
@@ -116,6 +139,7 @@ export async function runConfig(source) {
   let werkzeug = await ensureAvailable(source)
   await reportGitStatus(werkzeug)
   let bauen = await ensureBauenYaml(werkzeug)
+  let lePromise
   await bauen.tasks.forEach(async task => {
     if (! task.uname || uname === task.uname) {
       switch (task.operation) {
@@ -123,12 +147,17 @@ export async function runConfig(source) {
           if (isAlreadyLinked(werkzeug, task)) {
             log.progress('was already linked', werkzeug)
           } else {
-            await backupTarget(task)
-            await makeSymbolicLink(werkzeug, task)
+            lePromise = backupTarget(task).then(_ => linkOperation(werkzeug, task))
           }
           break
+        case 'copy':
+          lePromise = copyOperation(werkzeug, task)
+          break
+        case 'merge_yaml':
+          lePromise = mergeYamlOperation(werkzeug, task)
+          break
         case 'script':
-          log.warning('script not implemented yet', werkzeug)
+          lePromise = scriptOperation(werkzeug, task)
           break
         default:
           raise(`Don't know how to do operation: ${task.operation}`, werkzeug)
