@@ -86,7 +86,7 @@ async function uniqueToken() {
 }
 
 function isAlreadyLinked(werkzeug, task) {
-  let target = detildify(task.target)
+  let target = path.resolve(werkzeug, detildify(task.target))
   let source = path.resolve(werkzeug, detildify(task.source))
   if (! fs.existsSync(target)) {
     return false
@@ -118,7 +118,7 @@ export function detildify(p) {
 
 async function linkOperation(werkzeug, task) {
   let source = path.resolve(werkzeug, detildify(task.source))
-  let target = path.resolve(detildify(task.target))
+  let target = path.resolve(werkzeug, detildify(task.target))
   await $`ln -s ${source} ${target}`
   log.progress('linked', werkzeug)
 }
