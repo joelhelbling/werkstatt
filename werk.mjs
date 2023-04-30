@@ -26,13 +26,16 @@ function checkHelp() {
 if (checkHelp()) {
   console.log(`Werkstatt - a dotfiles configuration utility
 
- usage: werk [--verbose | -d | --debug] [-h | --help] [<command>]
+ usage: werk [--focus=pattern] [--verbose | -d | --debug] [-h | --help] [<command>]
 
  When no command is given, all toolsets (werkzeuge) will be checked for
  availability and then configured.
 
  To just check the git status of each toolset:
     git
+
+To run configuration for matching sources (from manifest.yaml):
+    werk --focus asdf
 `)
   process.exit(0)
 }
@@ -53,11 +56,14 @@ deps.forEach(dep => {
 const manifestFile = "./manifest.yaml"
 const manifest = YAML.parse(await fs.readFile(manifestFile, 'utf8'))
 for (const source of manifest) {
-  const werkzeug = await ensureAvailable(source)
-  const gitChanges = await reportGitStatus(werkzeug)
-  if (checkingGit()) {
-    log.complete('all done', werkzeug)
-  } else {
-    await runConfig(werkzeug)
+  const filter = argv.focus || '.'
+  if (source.match(filter)) {
+    const werkzeug = await ensureAvailable(source)
+    const gitChanges = await reportGitStatus(werkzeug)
+    if (checkingGit()) {
+      log.complete('all done', werkzeug)
+    } else {
+      await runConfig(werkzeug)
+    }
   }
 }
