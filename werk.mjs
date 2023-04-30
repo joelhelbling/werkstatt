@@ -44,7 +44,7 @@ $.verbose = checkVerbose()
 $.cwd = process.cwd()
 
 // ensure dependencies
-const deps = ['git']
+const deps = ['git', 'rg']
 deps.forEach(dep => {
   which.sync(dep)
 })
