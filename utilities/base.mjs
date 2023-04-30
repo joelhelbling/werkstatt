@@ -22,7 +22,7 @@ function raise(msg) {
 }
 
 async function ensureGit(remote) {
-  let werkzeug = `./werkzeuge/${remote.replace(/\.git$/, '').split('/').at(-1)}`
+  const werkzeug = `./werkzeuge/${remote.replace(/\.git$/, '').split('/').at(-1)}`
   log.info(`remote: ${remote}`, werkzeug)
 
   if (! fs.existsSync(werkzeug)) {
@@ -80,19 +80,19 @@ async function ensureBauenYaml(werkzeug) {
 }
 
 async function uniqueToken() {
-  let hash = await $`head /dev/urandom | md5sum | head -c 6`
-  let dateStr = new Date().toISOString().replace(/[-\.\:]/g, '')
+  const hash = await $`head /dev/urandom | md5sum | head -c 6`
+  const dateStr = new Date().toISOString().replace(/[-\.\:]/g, '')
   return `${dateStr}_${hash}`
 }
 
 function isAlreadyLinked(task) {
   const werkzeug = task.werkzeug
-  let target = path.resolve(werkzeug, detildify(task.target))
-  let source = path.resolve(werkzeug, detildify(task.source))
+  const target = path.resolve(werkzeug, detildify(task.target))
+  const source = path.resolve(werkzeug, detildify(task.source))
   if (! fs.existsSync(target)) {
     return false
   }
-  let isLink = fs.lstatSync(target).isSymbolicLink()
+  const isLink = fs.lstatSync(target).isSymbolicLink()
   if (isLink && fs.readlinkSync(target) == source) {
     return true
   } else {
@@ -104,8 +104,8 @@ async function backupTarget(task) {
   if (task.preserve_original) {
     const target = path.resolve(task.werkzeug, detildify(task.target))
     if (fs.existsSync(target)) {
-      let token = await uniqueToken()
-      let backupLocation = `${target}.bak.${token}`
+      const token = await uniqueToken()
+      const backupLocation = `${target}.bak.${token}`
       await $`mv ${target} ${backupLocation}`
       log.progress('backed up original', task.werkzeug)
     }
@@ -117,27 +117,27 @@ export function detildify(p) {
 }
 
 async function linkOperation(werkzeug, task) {
-  let source = path.resolve(werkzeug, detildify(task.source))
-  let target = path.resolve(werkzeug, detildify(task.target))
+  const source = path.resolve(werkzeug, detildify(task.source))
+  const target = path.resolve(werkzeug, detildify(task.target))
   await $`ln -s ${source} ${target}`
   log.progress('linked', werkzeug)
 }
 
 async function copyOperation(werkzeug, task) {
-  let source = path.resolve(werkzeug, detildify(task.source))
-  let target = path.resolve(werkzeug, detildify(task.target))
+  const source = path.resolve(werkzeug, detildify(task.source))
+  const target = path.resolve(werkzeug, detildify(task.target))
   await $`cp -f ${source} ${target}`
   log.progress('copied', werkzeug)
 }
 
 async function mergeYamlOperation(werkzeug, task) {
-  let target = path.resolve(werkzeug, detildify(task.target))
-  let targetFound = false
-  let targetYaml = YAML.parse(
+  const target = path.resolve(werkzeug, detildify(task.target))
+  const targetFound = false
+  const targetYaml = YAML.parse(
     fs.readFileSync(target, 'utf8'),
     { keepSourceTokens: true }
   )
-  let mergedYaml = merge(targetYaml, task.changes)
+  const mergedYaml = merge(targetYaml, task.changes)
   fs.writeFileSync(target, YAML.stringify(mergedYaml, { keepSourceTokens: true }))
   log.progress('yaml merged', werkzeug)
 }
@@ -147,8 +147,8 @@ async function scriptOperation(werkzeug, task) {
 }
 
 export async function runConfig(werkzeug) {
-  let uname = os.platform()
-  let bauen = await ensureBauenYaml(werkzeug)
+  const uname = os.platform()
+  const bauen = await ensureBauenYaml(werkzeug)
   for (const task of bauen.tasks) {
     task.werkzeug = werkzeug
     if (! task.uname || uname === task.uname) {

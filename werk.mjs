@@ -52,7 +52,7 @@ deps.forEach(dep => {
   which.sync(dep)
 })
 
-// let manifest = "./example.manifest.yaml"
+// const manifest = "./example.manifest.yaml"
 const manifestFile = "./manifest.yaml"
 const manifest = YAML.parse(await fs.readFile(manifestFile, 'utf8'))
 for (const source of manifest) {
