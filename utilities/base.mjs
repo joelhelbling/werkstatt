@@ -85,7 +85,8 @@ async function uniqueToken() {
   return `${dateStr}_${hash}`
 }
 
-function isAlreadyLinked(werkzeug, task) {
+function isAlreadyLinked(task) {
+  const werkzeug = task.werkzeug
   let target = path.resolve(werkzeug, detildify(task.target))
   let source = path.resolve(werkzeug, detildify(task.source))
   if (! fs.existsSync(target)) {
@@ -101,13 +102,12 @@ function isAlreadyLinked(werkzeug, task) {
 
 async function backupTarget(task) {
   if (task.preserve_original) {
-    let target = detildify(task.target)
+    const target = path.resolve(task.werkzeug, detildify(task.target))
     if (fs.existsSync(target)) {
       let token = await uniqueToken()
       let backupLocation = `${target}.bak.${token}`
       await $`mv ${target} ${backupLocation}`
-      // TODO further up stream, calculate werkzeug and stash it in the task
-      log.progress('backed up original', task.source)
+      log.progress('backed up original', task.werkzeug)
     }
   }
 }
@@ -150,10 +150,11 @@ export async function runConfig(werkzeug) {
   let uname = os.platform()
   let bauen = await ensureBauenYaml(werkzeug)
   for (const task of bauen.tasks) {
+    task.werkzeug = werkzeug
     if (! task.uname || uname === task.uname) {
       switch (task.operation) {
         case 'link':
-          if (isAlreadyLinked(werkzeug, task)) {
+          if (isAlreadyLinked(task)) {
             log.progress('was already linked', werkzeug)
           } else {
             await backupTarget(task)
