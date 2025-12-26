@@ -85,3 +85,4 @@ This makes it easier to keep all the `werkzeug` local working directories synced
 
 - git - for cloning git repos and other git operations
 - [yq](https://github.com/mikefarah/yq) - for parsing YAML files
+- rg - ripgrep
